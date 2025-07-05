@@ -1,45 +1,27 @@
-import Button from "@mui/material/Button"
-import Checkbox from "@mui/material/Checkbox"
-import FormControl from "@mui/material/FormControl"
-import FormControlLabel from "@mui/material/FormControlLabel"
-import InputLabel from "@mui/material/InputLabel"
-import MenuItem from "@mui/material/MenuItem"
-import Select from "@mui/material/Select"
-import Stack from "@mui/material/Stack"
-import TextField from "@mui/material/TextField"
 import { useGetFormConfigQuery } from "./formApiSlice"
+import FormSkeleton from "./Skeleton"
+import FormErrorMessage from "./ErrorMessage"
+import Form from "./Form"
 
 const DynamicForm = () => {
   const { data, isError, isLoading, isSuccess, error } =
     useGetFormConfigQuery(undefined)
 
-  return (
-    <Stack spacing={2}>
-      <hr />
-      <div>{JSON.stringify(data)}</div>
-      <hr />
-      <TextField label="label" />
+  if (isError) {
+    console.error("Form error", error)
 
-      <TextField
-        type="number"
-        label="label"
-        slotProps={{ htmlInput: { min: 0, max: 100 } }}
-      />
+    return <FormErrorMessage />
+  }
 
-      <FormControl fullWidth>
-        <InputLabel id="input-label-id">label</InputLabel>
-        <Select labelId="input-label-id" label="label">
-          <MenuItem value={0}>0</MenuItem>
-          <MenuItem value={1}>1</MenuItem>
-          <MenuItem value={2}>2</MenuItem>
-        </Select>
-      </FormControl>
+  if (isLoading) {
+    return <FormSkeleton />
+  }
 
-      <FormControlLabel control={<Checkbox />} label="label" />
+  if (isSuccess) {
+    return <Form fields={data.fields} />
+  }
 
-      <Button variant="contained">Submit</Button>
-    </Stack>
-  )
+  return null
 }
 
 export default DynamicForm
