@@ -1,0 +1,40 @@
+{
+  "fields": [
+    {
+      "id": "name",
+      "type": "text",
+      "label": "Full Name"
+    },
+    {
+      "id": "age",
+      "type": "number",
+      "label": "Age"
+    },
+    {
+      "id": "subscribe",
+      "type": "checkbox",
+      "label": "Subscribe to newsletter",
+      "visibleIf": {
+        "field": "age",
+        "operator": ">=",
+        "value": 18
+      }
+    },
+    {
+      "id": "email",
+      "type": "text",
+      "label": "Email Address",
+      "visibleIf": {
+        "field": "subscribe",
+        "operator": "==",
+        "value": true
+      }
+    },
+    {
+      "id": "gender",
+      "type": "select",
+      "label": "Gender",
+      "options": ["Male", "Female", "Other"]
+    }
+  ]
+}
