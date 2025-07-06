@@ -1,66 +1,119 @@
-import Button from "@mui/material/Button"
-import Checkbox from "@mui/material/Checkbox"
-import FormControl from "@mui/material/FormControl"
-import FormControlLabel from "@mui/material/FormControlLabel"
-import InputLabel from "@mui/material/InputLabel"
-import MenuItem from "@mui/material/MenuItem"
-import Select from "@mui/material/Select"
-import Stack from "@mui/material/Stack"
-import TextField from "@mui/material/TextField"
-import { useGetFormConfigQuery } from "./formApiSlice"
-import { type Field } from "../../utils/types"
-import { type SubmitHandler, useForm } from "react-hook-form"
-import { useEffect } from "react"
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import FieldGenerator from "./FieldGenerator";
+import { type SubmitHandler, useForm, Controller } from "react-hook-form";
+import { useCallback, useEffect } from "react";
+import { Operator, type VisibleIf, type Field } from "../../utils/types";
 
-type FormValues = Record<string, unknown>
-
+type FormValues = Record<string, unknown>;
 const Form = ({ fields }: { fields: Field[] }) => {
   const {
+    control,
     handleSubmit,
+    watch,
     reset,
-    formState: { isSubmitting },
-  } = useForm()
+    resetField,
+    clearErrors,
+    formState: { isSubmitting }
+  } = useForm();
+
+  const watchAllFields = watch();
+
+  const checkVisibility = useCallback(
+    (condition: VisibleIf) => {
+      switch (condition.operator) {
+        case Operator.Equal:
+          return watchAllFields[condition.field] == condition.value;
+        case Operator.NotEqual:
+          return watchAllFields[condition.field] != condition.value;
+        case Operator.GreaterThan:
+          return watchAllFields[condition.field] > condition.value;
+        case Operator.LessThan:
+          return watchAllFields[condition.field] < condition.value;
+        case Operator.GreaterThanOrEqual:
+          return watchAllFields[condition.field] >= condition.value;
+        case Operator.LessThanOrEqual:
+          return watchAllFields[condition.field] <= condition.value;
+
+        default:
+          return false;
+      }
+    },
+    [watchAllFields]
+  );
 
   useEffect(() => {
-    reset()
-  }, [])
+    reset();
+  }, []);
 
-  const onSubmit: SubmitHandler<FormValues> = async data => {
+  useEffect(() => {
+    const resetUnusedFields = () => {
+      fields.forEach((f) => {
+        if (f.visibleIf) {
+          if (!checkVisibility(f.visibleIf)) {
+            if (watchAllFields[f.id]) {
+              clearErrors(f.id);
+              resetField(f.id);
+            }
+          }
+        }
+      });
+    };
+
+    resetUnusedFields();
+  }, [checkVisibility, fields, resetField, watchAllFields, clearErrors]);
+
+  const onSubmit: SubmitHandler<FormValues> = async (data) => {
     if (Object.keys(data).length === 0) {
-      alert("Please fill in the form")
-      return
+      alert("Please fill in the form");
+      return;
     }
 
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    console.log(data)
-    reset()
-  }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    console.log(data);
+    reset();
+  };
 
   return (
     <form
-      onSubmit={event => {
-        void handleSubmit(onSubmit)(event)
+      onSubmit={(event) => {
+        void handleSubmit(onSubmit)(event);
       }}
     >
       <Stack spacing={2}>
-        <TextField label="label" />
+        <hr />
+        <div>data: {JSON.stringify(watchAllFields)}</div>
+        <hr />
 
-        <TextField
-          type="number"
-          label="label"
-          slotProps={{ htmlInput: { min: 0, max: 100 } }}
-        />
-
-        <FormControl fullWidth>
-          <InputLabel id="input-label-id">label</InputLabel>
-          <Select labelId="input-label-id" label="label">
-            <MenuItem value={0}>0</MenuItem>
-            <MenuItem value={1}>1</MenuItem>
-            <MenuItem value={2}>2</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControlLabel control={<Checkbox />} label="label" />
+        {fields.map((fieldProps) => (
+          <Controller
+            key={fieldProps.id}
+            name={fieldProps.id}
+            control={control}
+            defaultValue=""
+            rules={
+              watchAllFields.subscribe && fieldProps.id === "email"
+                ? {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[a-z0-9.%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/,
+                      message: "Invalid email address"
+                    }
+                  }
+                : {}
+            }
+            disabled={
+              fieldProps.visibleIf && !checkVisibility(fieldProps.visibleIf)
+            }
+            render={({ field, fieldState: { invalid, error } }) =>
+              fieldProps.visibleIf && !checkVisibility(fieldProps.visibleIf) ? (
+                <></>
+              ) : (
+                FieldGenerator(fieldProps, field, invalid, error)
+              )
+            }
+          />
+        ))}
 
         <Button
           variant="contained"
@@ -72,7 +125,7 @@ const Form = ({ fields }: { fields: Field[] }) => {
         </Button>
       </Stack>
     </form>
-  )
-}
+  );
+};
 
-export default Form
+export default Form;
